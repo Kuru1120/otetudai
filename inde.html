@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>お手伝いカレンダー</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        .calendar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            overflow: hidden; /* はみ出しを防ぐ */
+            width: 550px; /* 横に伸ばす */
+        }
+        h1 {
+            margin: 0 0 20px;
+            color: #333;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            max-width: 100%;
+        }
+        .day {
+            width: 66px; /* 80pxの6分の5 */
+            height: 66px; /* 80pxの6分の5 */
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #fafafa;
+            transition: background-color 0.3s;
+            position: relative; /* 相対位置を設定 */
+            overflow: hidden; /* はみ出しを防ぐ */
+        }
+        .day:hover {
+            background-color: #e0f7fa; /* ホバー時の色 */
+        }
+        .day strong {
+            font-size: 18px;
+            color: #00796b; /* 日付の色 */
+        }
+        .clear-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 10px;
+            background: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #fff;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 300px;
+            text-align: center;
+        }
+        .color-legend {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 300px;
+        }
+        .color-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        .color-box {
+            width: 11px; /* 66pxの6分の5 */
+            height: 11px; /* 66pxの6分の5 */
+            border: 1px solid #000;
+            border-radius: 50%; /* 丸にする */
+            margin-right: 10px;
+        }
+        .task-one { background-color: red; }
+        .task-two { background-color: blue; }
+        .task-three { background-color: yellow; color: black; }
+        .task-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            border: 1px solid #000;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar-container">
+        <h1>お手伝いカレンダー - <span id="currentMonth">4月</span></h1>
+        <select id="monthSelector">
+            <option value="4">4月</option>
+            <option value="5">5月</option>
+            <option value="6">6月</option>
+            <option value="7">7月</option>
+            <option value="8">8月</option>
+            <option value="9">9月</option>
+            <option value="10">10月</option>
+            <option value="11">11月</option>
+            <option value="12">12月</option>
+        </select>
+        <div class="calendar" id="calendar"></div>
+    </div>
+    <div class="info">
+        <p>こんげつのポイント: <span id="totalPoints">0</span></p>
+        <p>おてつだいしたかず: <span id="taskCount">0</span></p>
+    </div>
+
+    <!-- カラー内訳 -->
+    <div class="color-legend">
+        <h3>タスクの色の内訳</h3>
+        <div class="color-item">
+            <div class="color-box task-one"></div>
+            <span>一人で寝る: <span id="taskOneCount">0</span> (30点)</span>
+        </div>
+        <div class="color-item">
+            <div class="color-box task-two"></div>
+            <span>ひとりで風呂に入る: <span id="taskTwoCount">0</span> (25点)</span>
+        </div>
+        <div class="color-item">
+            <div class="color-box task-three"></div>
+            <span>洗濯物を干す: <span id="taskThreeCount">0</span> (20点)</span>
+        </div>
+    </div>
+
+    <!-- ポップアップフォーム -->
+    <div class="popup-overlay" id="popupOverlay"></div>
+    <div class="task-popup" id="taskPopup">
+        <h3>タスクを編集</h3>
+        <label for="taskName">タスク名:</label>
+        <select id="taskName">
+            <option value="一人で寝る">一人で寝る</option>
+            <option value="ひとりで風呂に入る">ひとりで風呂に入る</option>
+            <option value="洗濯物を干す">洗濯物を干す</option>
+        </select>
+        <br>
+        <label for="taskPoints">点数:</label>
+        <select id="taskPoints">
+            <option value="30">30点</option>
+            <option value="25">25点</option>
+            <option value="20">20点</option>
+        </select>
+        <br>
+        <button id="saveTask">保存</button>
+        <button id="cancelPopup">キャンセル</button>
+    </div>
+    
+    <script>
+        const calendar = document.getElementById("calendar");
+        const monthSelector = document.getElementById("monthSelector");
+        const currentMonthDisplay = document.getElementById("currentMonth");
+        let totalPoints = 0;
+        let taskCount = 0;
+        let taskOneCount = 0;
+        let taskTwoCount = 0;
+        let taskThreeCount = 0;
+        let tasks = {}; // 月ごとのタスクを保存
+
+        // 月を変更する際の処理
+        monthSelector.onchange = function() {
+            const selectedMonth = monthSelector.value;
+            currentMonthDisplay.textContent = `${selectedMonth}月`;
+            loadTasks(selectedMonth);
+        };
+
+        // ポップアップ関連
+        const popupOverlay = document.getElementById("popupOverlay");
+        const taskPopup = document.getElementById("taskPopup");
+        const taskNameInput = document.getElementById("taskName");
+        const taskPointsInput = document.getElementById("taskPoints");
+        const saveTaskButton = document.getElementById("saveTask");
+        const cancelPopupButton = document.getElementById("cancelPopup");
+        let selectedDay;
+
+        // タスク名に応じてポイントを設定
+        taskNameInput.onchange = () => {
+            switch (taskNameInput.value) {
+                case "一人で寝る":
+                    taskPointsInput.value = "30";
+                    break;
+                case "ひとりで風呂に入る":
+                    taskPointsInput.value = "25";
+                    break;
+                case "洗濯物を干す":
+                    taskPointsInput.value = "20";
+                    break;
+            }
+        };
+
+        function updateInfo() {
+            totalPoints = 0;
+            taskCount = 0;
+            taskOneCount = 0;
+            taskTwoCount = 0;
+            taskThreeCount = 0;
+
+            Object.values(tasks).forEach(monthTasks => {
+                Object.values(monthTasks).forEach(dayTasks => {
+                    dayTasks.forEach(task => {
+                        totalPoints += task.points;
+                        taskCount++;
+
+                        // タスクのカウントを更新
+                        if (task.task === "一人で寝る") {
+                            taskOneCount++;
+                        } else if (task.task === "ひとりで風呂に入る") {
+                            taskTwoCount++;
+                        } else if (task.task === "洗濯物を干す") {
+                            taskThreeCount++;
+                        }
+                    });
+                });
+            });
+
+            document.getElementById("totalPoints").textContent = totalPoints;
+            document.getElementById("taskCount").textContent = taskCount;
+            document.getElementById("taskOneCount").textContent = taskOneCount;
+            document.getElementById("taskTwoCount").textContent = taskTwoCount;
+            document.getElementById("taskThreeCount").textContent = taskThreeCount;
+        }
+
+        function clearTask(day) {
+            if (tasks[monthSelector.value] && tasks[monthSelector.value][day]) {
+                delete tasks[monthSelector.value][day];
+                loadTasks(monthSelector.value); // 月を読み込み直す
+            }
+        }
+
+        function showPopup(day) {
+            selectedDay = day;
+            popupOverlay.style.display = "block";
+            taskPopup.style.display = "block";
+            const task = tasks[monthSelector.value] && tasks[monthSelector.value][day] ? tasks[monthSelector.value][day][0] : null;
+            if (task) {
+                taskNameInput.value = task.task;
+                taskPointsInput.value = task.points;
+            } else {
+                taskNameInput.value = '一人で寝る'; // デフォルト値
+                taskPointsInput.value = '30'; // デフォルト値
+            }
+        }
+
+        function closePopup() {
+            popupOverlay.style.display = "none";
+            taskPopup.style.display = "none";
+        }
+
+        saveTaskButton.onclick = () => {
+            const taskName = taskNameInput.value;
+            const taskPoints = parseInt(taskPointsInput.value);
+            if (!taskName || isNaN(taskPoints)) return;
+
+            if (!tasks[monthSelector.value]) {
+                tasks[monthSelector.value] = {};
+            }
+            if (!tasks[monthSelector.value][selectedDay]) {
+                tasks[monthSelector.value][selectedDay] = [];
+            }
+
+            // タスクを更新または追加
+            tasks[monthSelector.value][selectedDay][0] = { task: taskName, points: taskPoints };
+            updateInfo();
+            closePopup();
+            loadTasks(monthSelector.value); // 月を読み込み直す
+        };
+
+        cancelPopupButton.onclick = closePopup;
+        popupOverlay.onclick = closePopup;
+
+        function loadTasks(month) {
+            calendar.innerHTML = ""; // カレンダーをクリア
+            for (let i = 1; i <= 30; i++) {
+                const dayDiv = document.createElement("div");
+                dayDiv.className = "day";
+                dayDiv.innerHTML = `<strong>${i}</strong>`; // 日付を太字に
+                dayDiv.onclick = () => showPopup(i);
+                if (tasks[month] && tasks[month][i]) {
+                    tasks[month][i].forEach(t => {
+                        const taskDiv = document.createElement("div");
+                        taskDiv.className = "task";
+                        let taskClass = '';
+                        switch (t.task) {
+                            case "一人で寝る":
+                                taskClass = 'task-one'; // 赤
+                                break;
+                            case "ひとりで風呂に入る":
+                                taskClass = 'task-two'; // 青
+                                break;
+                            case "洗濯物を干す":
+                                taskClass = 'task-three'; // 黄色
+                                break;
+                        }
+                        taskDiv.innerHTML = `
+                            <div class="color-box ${taskClass}"></div>
+                        `;
+                        dayDiv.appendChild(taskDiv);
+                    });
+                    const clearBtn = document.createElement("button");
+                    clearBtn.className = "clear-btn";
+                    clearBtn.textContent = "X";
+                    clearBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        clearTask(i);
+                    };
+                    dayDiv.appendChild(clearBtn);
+                }
+                calendar.appendChild(dayDiv);
+            }
+            updateInfo();
+        }
+
+        // 初期表示
+        loadTasks(monthSelector.value);
+    </script>
+</body>
+</html>
