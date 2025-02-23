@@ -32,12 +32,12 @@
         .calendar {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 5px; /* 余白を半分に設定 */
+            gap: 5px; /* 全体の余白 */
             max-width: 100%;
         }
         .day {
-            width: 60px; /* 80pxの6分の5 */
-            height: 60px; /* 80pxの6分の5 */
+            width: 66px; /* 80pxの6分の5 */
+            height: 66px; /* 80pxの6分の5 */
             border: 1px solid #ccc;
             border-radius: 8px;
             display: flex;
@@ -124,6 +124,14 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        /* 7, 14, 21, 28日の右側の余白を半分に */
+        .day:nth-child(7),
+        .day:nth-child(14),
+        .day:nth-child(21),
+        .day:nth-child(28) {
+            margin-right: 2.5px; /* 余白を半分に設定 */
         }
     </style>
 </head>
@@ -311,7 +319,7 @@
 
         function loadTasks(month) {
             calendar.innerHTML = ""; // カレンダーをクリア
-            for (let i = 1; i <= 30; i++) {
+            for (let i = 1; i <= 31; i++) { // 31日までループ
                 const dayDiv = document.createElement("div");
                 dayDiv.className = "day";
                 dayDiv.innerHTML = `<strong>${i}</strong>`; // 日付を太字に
