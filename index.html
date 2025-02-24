@@ -31,10 +31,10 @@
         }
         .calendar {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(7, 1fr);
             gap: 5px; /* 全体の余白 */
             max-width: 100%;
-        }
+                  }
         .day {
             width: 66px; /* 80pxの6分の5 */
             height: 66px; /* 80pxの6分の5 */
@@ -44,7 +44,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background-color: #fafafa;
+            background-color: #fff;
             transition: background-color 0.3s;
             position: relative; /* 相対位置を設定 */
             overflow: hidden; /* はみ出しを防ぐ */
@@ -126,13 +126,33 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
         }
-
-        /* 7, 14, 21, 28日の右側の余白を半分に */
-        .day:nth-child(7),
-        .day:nth-child(14),
-        .day:nth-child(21),
-        .day:nth-child(28) {
-            margin-right: 2.5px; /* 余白を半分に設定 */
+        .history {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 550px;
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .history h3 {
+            margin: 0 0 10px;
+        }
+        .history-item {
+            padding: 5px;
+            border-bottom: 1px solid #ccc;
+        }
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        .reset-btn {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -155,6 +175,7 @@
     <div class="info">
         <p>こんげつのポイント: <span id="totalPoints">0</span></p>
         <p>おてつだいしたかず: <span id="taskCount">0</span></p>
+        <img src="doraemon.jpg">
     </div>
 
     <!-- カラー内訳 -->
@@ -201,184 +222,212 @@
         <button id="saveTask">保存</button>
         <button id="cancelPopup">キャンセル</button>
     </div>
-    
-    <script>
-        const calendar = document.getElementById("calendar");
-        const monthSelector = document.getElementById("monthSelector");
-        const currentMonthDisplay = document.getElementById("currentMonth");
-        let totalPoints = 0;
-        let taskCount = 0;
-        let taskOneCount = 0;
-        let taskTwoCount = 0;
-        let taskThreeCount = 0;
-        let taskFourCount = 0; // 新しいタスクカウント
-        let tasks = {}; // 月ごとのタスクを保存
+    <!-- 更新履歴 -->
+    <div class="history">
+      <h3>更新履歴</h3>
+      <div id="historyList"></div>
+      <button class="reset-btn" id="resetHistory">履歴をリセット</button> <!-- リセットボタン -->
+  </div>
 
-        // 月を変更する際の処理
-        monthSelector.onchange = function() {
-            const selectedMonth = monthSelector.value;
-            currentMonthDisplay.textContent = `${selectedMonth}月`;
-            loadTasks(selectedMonth);
-        };
+  <script>
+      const calendar = document.getElementById("calendar");
+      const monthSelector = document.getElementById("monthSelector");
+      const currentMonthDisplay = document.getElementById("currentMonth");
+      let totalPoints = 0;
+      let taskCount = 0;
+      let taskOneCount = 0;
+      let taskTwoCount = 0;
+      let taskThreeCount = 0;
+      let taskFourCount = 0; // 新しいタスクカウント
+      let tasks = {}; // 月ごとのタスクを保存
+      const historyList = document.getElementById("historyList"); // 更新履歴リスト
 
-        // ポップアップ関連
-        const popupOverlay = document.getElementById("popupOverlay");
-        const taskPopup = document.getElementById("taskPopup");
-        const taskNameInput = document.getElementById("taskName");
-        const taskPointsInput = document.getElementById("taskPoints");
-        const saveTaskButton = document.getElementById("saveTask");
-        const cancelPopupButton = document.getElementById("cancelPopup");
-        let selectedDay;
+      // 月を変更する際の処理
+      monthSelector.onchange = function() {
+          const selectedMonth = monthSelector.value;
+          currentMonthDisplay.textContent = `${selectedMonth}月`;
+          loadTasks(selectedMonth);
+      };
 
-        // タスク名に応じてポイントを設定
-        taskNameInput.onchange = () => {
-            switch (taskNameInput.value) {
-                case "一人で寝る":
-                    taskPointsInput.value = "30";
-                    break;
-                case "ひとりで風呂に入る":
-                    taskPointsInput.value = "25";
-                    break;
-                case "洗濯物を干す":
-                    taskPointsInput.value = "20";
-                    break;
-                case "朝にカーテン、シャッターをあけるそして布団の毛布をたたむ":
-                    taskPointsInput.value = "10"; // 新しいタスクのポイント
-                    break;
-            }
-        };
+      // ポップアップ関連
+      const popupOverlay = document.getElementById("popupOverlay");
+      const taskPopup = document.getElementById("taskPopup");
+      const taskNameInput = document.getElementById("taskName");
+      const taskPointsInput = document.getElementById("taskPoints");
+      const saveTaskButton = document.getElementById("saveTask");
+      const cancelPopupButton = document.getElementById("cancelPopup");
+      let selectedDay;
 
-        function updateInfo() {
-            totalPoints = 0;
-            taskCount = 0;
-            taskOneCount = 0;
-            taskTwoCount = 0;
-            taskThreeCount = 0;
-            taskFourCount = 0; // 新しいタスクカウント
+      // タスク名に応じてポイントを設定
+      taskNameInput.onchange = () => {
+          switch (taskNameInput.value) {
+              case "一人で寝る":
+                  taskPointsInput.value = "30";
+                  break;
+              case "ひとりで風呂に入る":
+                  taskPointsInput.value = "25";
+                  break;
+              case "洗濯物を干す":
+                  taskPointsInput.value = "20";
+                  break;
+              case "朝にカーテン、シャッターをあけるそして布団の毛布をたたむ":
+                  taskPointsInput.value = "10"; // 新しいタスクのポイント
+                  break;
+          }
+      };
 
-            Object.values(tasks).forEach(monthTasks => {
-                Object.values(monthTasks).forEach(dayTasks => {
-                    dayTasks.forEach(task => {
-                        totalPoints += task.points;
-                        taskCount++;
+      function updateInfo() {
+          totalPoints = 0;
+          taskCount = 0;
+          taskOneCount = 0;
+          taskTwoCount = 0;
+          taskThreeCount = 0;
+          taskFourCount = 0; // 新しいタスクカウント
 
-                        // タスクのカウントを更新
-                        if (task.task === "一人で寝る") {
-                            taskOneCount++;
-                        } else if (task.task === "ひとりで風呂に入る") {
-                            taskTwoCount++;
-                        } else if (task.task === "洗濯物を干す") {
-                            taskThreeCount++;
-                        } else if (task.task === "朝にカーテン、シャッターをあけるそして布団の毛布をたたむ") {
-                            taskFourCount++;
-                        }
-                    });
-                });
-            });
+          Object.values(tasks).forEach(monthTasks => {
+              Object.values(monthTasks).forEach(dayTasks => {
+                  dayTasks.forEach(task => {
+                      totalPoints += task.points;
+                      taskCount++;
 
-            document.getElementById("totalPoints").textContent = totalPoints;
-            document.getElementById("taskCount").textContent = taskCount;
-            document.getElementById("taskOneCount").textContent = taskOneCount;
-            document.getElementById("taskTwoCount").textContent = taskTwoCount;
-            document.getElementById("taskThreeCount").textContent = taskThreeCount;
-            document.getElementById("taskFourCount").textContent = taskFourCount; // 新しいタスクカウント
-        }
+                      // タスクのカウントを更新
+                      if (task.task === "一人で寝る") {
+                          taskOneCount++;
+                      } else if (task.task === "ひとりで風呂に入る") {
+                          taskTwoCount++;
+                      } else if (task.task === "洗濯物を干す") {
+                          taskThreeCount++;
+                      } else if (task.task === "朝にカーテン、シャッターをあけるそして布団の毛布をたたむ") {
+                          taskFourCount++;
+                      }
+                  });
+              });
+          });
 
-        function clearTask(day) {
-            if (tasks[monthSelector.value] && tasks[monthSelector.value][day]) {
-                delete tasks[monthSelector.value][day];
-                loadTasks(monthSelector.value); // 月を読み込み直す
-            }
-        }
+          document.getElementById("totalPoints").textContent = totalPoints;
+          document.getElementById("taskCount").textContent = taskCount;
+          document.getElementById("taskOneCount").textContent = taskOneCount;
+          document.getElementById("taskTwoCount").textContent = taskTwoCount;
+          document.getElementById("taskThreeCount").textContent = taskThreeCount;
+          document.getElementById("taskFourCount").textContent = taskFourCount; // 新しいタスクカウント
+      }
 
-        function showPopup(day) {
-            selectedDay = day;
-            popupOverlay.style.display = "block";
-            taskPopup.style.display = "block";
-            const task = tasks[monthSelector.value] && tasks[monthSelector.value][day] ? tasks[monthSelector.value][day][0] : null;
-            if (task) {
-                taskNameInput.value = task.task;
-                taskPointsInput.value = task.points;
-            } else {
-                taskNameInput.value = '一人で寝る'; // デフォルト値
-                taskPointsInput.value = '30'; // デフォルト値
-            }
-        }
+      function clearTask(day) {
+          if (tasks[monthSelector.value] && tasks[monthSelector.value][day]) {
+              delete tasks[monthSelector.value][day];
+              loadTasks(monthSelector.value); // 月を読み込み直す
+          }
+      }
 
-        function closePopup() {
-            popupOverlay.style.display = "none";
-            taskPopup.style.display = "none";
-        }
+      function showPopup(day) {
+          selectedDay = day;
+          popupOverlay.style.display = "block";
+          taskPopup.style.display = "block";
+          const task = tasks[monthSelector.value] && tasks[monthSelector.value][day] ? tasks[monthSelector.value][day][0] : null;
+          if (task) {
+              taskNameInput.value = task.task;
+              taskPointsInput.value = task.points;
+          } else {
+              taskNameInput.value = '一人で寝る'; // デフォルト値
+              taskPointsInput.value = '30'; // デフォルト値
+          }
+      }
 
-        saveTaskButton.onclick = () => {
-            const taskName = taskNameInput.value;
-            const taskPoints = parseInt(taskPointsInput.value);
-            if (!taskName || isNaN(taskPoints)) return;
+      function closePopup() {
+          popupOverlay.style.display = "none";
+          taskPopup.style.display = "none";
+      }
 
-            if (!tasks[monthSelector.value]) {
-                tasks[monthSelector.value] = {};
-            }
-            if (!tasks[monthSelector.value][selectedDay]) {
-                tasks[monthSelector.value][selectedDay] = [];
-            }
+      saveTaskButton.onclick = () => {
+          const taskName = taskNameInput.value;
+          const taskPoints = parseInt(taskPointsInput.value);
+          if (!taskName || isNaN(taskPoints)) return;
 
-            // タスクを更新または追加
-            tasks[monthSelector.value][selectedDay][0] = { task: taskName, points: taskPoints };
-            updateInfo();
-            closePopup();
-            loadTasks(monthSelector.value); // 月を読み込み直す
-        };
+          if (!tasks[monthSelector.value]) {
+              tasks[monthSelector.value] = {};
+          }
+          if (!tasks[monthSelector.value][selectedDay]) {
+              tasks[monthSelector.value][selectedDay] = [];
+          }
 
-        cancelPopupButton.onclick = closePopup;
-        popupOverlay.onclick = closePopup;
+          // タスクを更新または追加
+          tasks[monthSelector.value][selectedDay][0] = { task: taskName, points: taskPoints };
+          updateInfo();
+          addHistoryEntry(taskName, taskPoints); // 更新履歴に追加
+          closePopup();
+          loadTasks(monthSelector.value); // 月を読み込み直す
+      };
 
-        function loadTasks(month) {
-            calendar.innerHTML = ""; // カレンダーをクリア
-            for (let i = 1; i <= 31; i++) { // 31日までループ
-                const dayDiv = document.createElement("div");
-                dayDiv.className = "day";
-                dayDiv.innerHTML = `<strong>${i}</strong>`; // 日付を太字に
-                dayDiv.onclick = () => showPopup(i);
-                if (tasks[month] && tasks[month][i]) {
-                    tasks[month][i].forEach(t => {
-                        const taskDiv = document.createElement("div");
-                        taskDiv.className = "task";
-                        let taskClass = '';
-                        switch (t.task) {
-                            case "一人で寝る":
-                                taskClass = 'task-one'; // 赤
-                                break;
-                            case "ひとりで風呂に入る":
-                                taskClass = 'task-two'; // 青
-                                break;
-                            case "洗濯物を干す":
-                                taskClass = 'task-three'; // 黄色
-                                break;
-                            case "朝にカーテン、シャッターをあけるそして布団の毛布をたたむ":
-                                taskClass = 'task-four'; // 水色
-                                break;
-                        }
-                        taskDiv.innerHTML = `
-                            <div class="color-box ${taskClass}"></div>
-                        `;
-                        dayDiv.appendChild(taskDiv);
-                    });
-                    const clearBtn = document.createElement("button");
-                    clearBtn.className = "clear-btn";
-                    clearBtn.textContent = "X";
-                    clearBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        clearTask(i);
-                    };
-                    dayDiv.appendChild(clearBtn);
-                }
-                calendar.appendChild(dayDiv);
-            }
-            updateInfo();
-        }
+      cancelPopupButton.onclick = closePopup;
+      popupOverlay.onclick = closePopup;
 
-        // 初期表示
-        loadTasks(monthSelector.value);
-    </script>
+      function loadTasks(month) {
+          calendar.innerHTML = ""; // カレンダーをクリア
+          for (let i = 1; i <= 31; i++) { // 31日までループ
+              const dayDiv = document.createElement("div");
+              dayDiv.className = "day";
+              dayDiv.innerHTML = `<strong>${i}</strong>`; // 日付を太字に
+              dayDiv.onclick = () => showPopup(i);
+              if (tasks[month] && tasks[month][i]) {
+                  tasks[month][i].forEach(t => {
+                      const taskDiv = document.createElement("div");
+                      taskDiv.className = "task";
+                      let taskClass = '';
+                      switch (t.task) {
+                          case "一人で寝る":
+                              taskClass = 'task-one'; // 赤
+                              break;
+                          case "ひとりで風呂に入る":
+                              taskClass = 'task-two'; // 青
+                              break;
+                          case "洗濯物を干す":
+                              taskClass = 'task-three'; // 黄色
+                              break;
+                          case "朝にカーテン、シャッターをあけるそして布団の毛布をたたむ":
+                              taskClass = 'task-four'; // 水色
+                              break;
+                      }
+                      taskDiv.innerHTML = `
+                          <div class="color-box ${taskClass}"></div>
+                      `;
+                      dayDiv.appendChild(taskDiv);
+                  });
+                  const clearBtn = document.createElement("button");
+                  clearBtn.className = "clear-btn";
+                  clearBtn.textContent = "X";
+                  clearBtn.onclick = (e) => {
+                      e.stopPropagation();
+                      clearTask(i);
+                  };
+                  dayDiv.appendChild(clearBtn);
+              }
+              calendar.appendChild(dayDiv);
+          }
+          updateInfo();
+      }
+
+      // 更新履歴にエントリを追加する関数
+      function addHistoryEntry(taskName, taskPoints) {
+          const entry = document.createElement("div");
+          entry.className = "history-item";
+          const date = new Date();
+          entry.textContent = `${date.toLocaleString()}: ${taskName} - ${taskPoints}点`;
+          historyList.appendChild(entry);
+      }
+
+      // 履歴をリセットする関数
+      document.getElementById("resetHistory").onclick = () => {
+          const password = prompt("パスワードを入力してください:");
+          if (password === "1460") {
+              historyList.innerHTML = ""; // 履歴をクリア
+              alert("履歴がリセットされました。");
+          } else {
+              alert("パスワードが間違っています。");
+          }
+      };
+
+      // 初期表示
+      loadTasks(monthSelector.value);
+  </script>
 </body>
 </html>
