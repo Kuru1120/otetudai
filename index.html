@@ -31,7 +31,7 @@
         }
         .calendar {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(7, 1fr);
             gap: 5px; /* 全体の余白 */
             max-width: 100%;
         }
@@ -104,6 +104,7 @@
         .task-one { background-color: red; }
         .task-two { background-color: blue; }
         .task-three { background-color: yellow; color: black; }
+        .task-four { background-color: lightblue; } /* 水色 */
         .task-popup {
             display: none;
             position: fixed;
@@ -171,6 +172,10 @@
             <div class="color-box task-three"></div>
             <span>洗濯物を干す: <span id="taskThreeCount">0</span> (20点)</span>
         </div>
+        <div class="color-item">
+            <div class="color-box task-four"></div>
+            <span>朝にカーテン、シャッターをあけるそして布団の毛布をたたむ: <span id="taskFourCount">0</span> (10点)</span>
+        </div>
     </div>
 
     <!-- ポップアップフォーム -->
@@ -182,6 +187,7 @@
             <option value="一人で寝る">一人で寝る</option>
             <option value="ひとりで風呂に入る">ひとりで風呂に入る</option>
             <option value="洗濯物を干す">洗濯物を干す</option>
+            <option value="朝にカーテン、シャッターをあけるそして布団の毛布をたたむ">朝にカーテン、シャッターをあけるそして布団の毛布をたたむ</option>
         </select>
         <br>
         <label for="taskPoints">点数:</label>
@@ -189,6 +195,7 @@
             <option value="30">30点</option>
             <option value="25">25点</option>
             <option value="20">20点</option>
+            <option value="10">10点</option> <!-- 新しい点数 -->
         </select>
         <br>
         <button id="saveTask">保存</button>
@@ -204,6 +211,7 @@
         let taskOneCount = 0;
         let taskTwoCount = 0;
         let taskThreeCount = 0;
+        let taskFourCount = 0; // 新しいタスクカウント
         let tasks = {}; // 月ごとのタスクを保存
 
         // 月を変更する際の処理
@@ -234,6 +242,9 @@
                 case "洗濯物を干す":
                     taskPointsInput.value = "20";
                     break;
+                case "朝にカーテン、シャッターをあけるそして布団の毛布をたたむ":
+                    taskPointsInput.value = "10"; // 新しいタスクのポイント
+                    break;
             }
         };
 
@@ -243,6 +254,7 @@
             taskOneCount = 0;
             taskTwoCount = 0;
             taskThreeCount = 0;
+            taskFourCount = 0; // 新しいタスクカウント
 
             Object.values(tasks).forEach(monthTasks => {
                 Object.values(monthTasks).forEach(dayTasks => {
@@ -257,6 +269,8 @@
                             taskTwoCount++;
                         } else if (task.task === "洗濯物を干す") {
                             taskThreeCount++;
+                        } else if (task.task === "朝にカーテン、シャッターをあけるそして布団の毛布をたたむ") {
+                            taskFourCount++;
                         }
                     });
                 });
@@ -267,6 +281,7 @@
             document.getElementById("taskOneCount").textContent = taskOneCount;
             document.getElementById("taskTwoCount").textContent = taskTwoCount;
             document.getElementById("taskThreeCount").textContent = taskThreeCount;
+            document.getElementById("taskFourCount").textContent = taskFourCount; // 新しいタスクカウント
         }
 
         function clearTask(day) {
@@ -338,6 +353,9 @@
                                 break;
                             case "洗濯物を干す":
                                 taskClass = 'task-three'; // 黄色
+                                break;
+                            case "朝にカーテン、シャッターをあけるそして布団の毛布をたたむ":
+                                taskClass = 'task-four'; // 水色
                                 break;
                         }
                         taskDiv.innerHTML = `
